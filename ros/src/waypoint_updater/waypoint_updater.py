@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import Lane, Waypoint
 
 import math
 import tf
 
+from bisect import bisect_right
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
@@ -47,11 +48,26 @@ def get_nearest_wp(current_pose, waypoints):
 
     return nearest_wp_id
 
-# Find several way points in front of the current pose
-def get_waypoints_infront(current_pose, waypoints):
-    # the id of nearest way point
-    nearest_wp_id = get_nearest_wp(current_pose, waypoints)
+# Find the nearest (or 2nd nearest waypoint) using the yaw angle.
+# Given the fact that the lane are almost convex, thus the yaw angle 
+# relative to the axis through the centroid and the 1st waypoint
+# are monotonic (in this case, increasing, as the road direction is counterclockwise)
+# thus we can make of binary search to speed up the search for the nearest point
+def get_nearest_wp_by_yaw(current_yaw, yaw_wp):
+    while current_yaw < 0:
+        current_yaw += math.pi*2
 
+    # find the rightmost wp with yaw greater than current yaw
+    nearest_wp_id = bisect_right(yaw_wp, current_yaw)
+
+    if nearest_wp_id == len(yaw_wp):
+        nearest_wp_id = 0
+
+    return nearest_wp_id
+
+
+# Find several way points in front of the current pose
+def get_waypoints_infront(nearest_wp_id, current_pose, waypoints):
     # the nearst way point itself
     nearest_wp = waypoints.waypoints[nearest_wp_id].pose
 
@@ -118,12 +134,54 @@ class WaypointUpdater(object):
         # TODO: Implement
         self.current_pose = msg
 
-        if self.waypoints is not None:
-            self.final_waypoints_pub.publish(get_waypoints_infront(self.current_pose, self.waypoints))
+        if self.waypoints is None:
+            return
+
+        # # the id of nearest way point
+        # nearest_wp_id = get_nearest_wp(current_pose, waypoints)
+
+        p = self.current_pose.pose.position
+        current_yaw = math.atan2(p.y-self.centroid_y, p.x-self.centroid_x) - self.yaw_offset
+
+        nearest_wp_id = get_nearest_wp_by_yaw(current_yaw, self.yaw_wp)
+
+        self.final_waypoints_pub.publish(get_waypoints_infront(nearest_wp_id, self.current_pose, self.waypoints))
+
+
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
         self.waypoints = waypoints
+
+        # to prepare for the nearest-waypoint search by yaw angle
+        # calculate the yaw angle with the respect to the centroid of the lane
+        # then offset these angle by the angle of the first waypoint
+        # in this way, given the convexity of the lane, the yaw angles will be sorted
+        # and binary search can be used to search for the nearest waypoint
+
+        # the centroid of the lane
+        self.num_wp = len(waypoints.waypoints)
+        self.centroid_x = sum(wp.pose.pose.position.x for wp in waypoints.waypoints)/self.num_wp
+        self.centroid_y = sum(wp.pose.pose.position.y for wp in waypoints.waypoints)/self.num_wp
+
+        self.yaw_wp = []
+
+        # yaw angle of the way points to the centroid
+        for wp in waypoints.waypoints:
+            p = wp.pose.pose.position
+            self.yaw_wp.append(math.atan2(p.y-self.centroid_y, p.x-self.centroid_x))
+
+        # subtract all the yaw angles by the first one, so that the first angle will be zero,
+        # and all the angles are sorted in increasing order
+        self.yaw_offset = self.yaw_wp[0]
+
+        for i in range(len(self.yaw_wp)):
+            self.yaw_wp[i] -= self.yaw_offset
+            while(self.yaw_wp[i] < 0):
+                self.yaw_wp[i] += 2*math.pi
+
+        # rospy.logwarn('yaw wp: %s', self.yaw_wp[:30])
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
