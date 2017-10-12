@@ -89,7 +89,8 @@ class TLDetector(object):
             self.init_lights_waypoint_lookup_if_ready()
 
     def init_lights_waypoint_lookup_if_ready(self):
-        # One time expensive operation.
+        """Initialize for quick lights waypoint lookup.
+        """
         if self.lights_waypoint_lookup is None and self.waypoints is not None \
            and self.lights is not None:
             rospy.loginfo('waypoints length {}'.format(self.num_waypoints))
@@ -253,21 +254,6 @@ class TLDetector(object):
         cx = image_width/2
         cy = image_height/2
 
-        '''x = 0
-        y = 0
-
-        trans_mat = tf.transformations.translation_matrix(trans)
-        rot_mat = tf.transformations.quaternion_matrix(rot)
-        
-        M  = np.matmul(trans_mat, rot_mat)
-        point_hom = np.array([[point_in_world.x], [point_in_world.y], [point_in_world.z], [1.0]])
-        point_veh = np.dot(M, point_hom)
-
-        # Transform points to image plane
-        x = -fx * point_veh[1]/point_veh[0] + 0.5*image_width
-        y = -fy * point_veh[2]/point_veh[0] + 0.5*image_height
-        '''
-
         px = point_in_world.x
         py = point_in_world.y
         pz = point_in_world.z
@@ -309,7 +295,6 @@ class TLDetector(object):
         min_distance = 1e9
         current_position = self.pose.pose.position
         for li, light in enumerate(self.lights):
-            #rospy.loginfo('li {} len self.lights_waypoint_lookup {}'.format(li, len(self.lights_waypoint_lookup)))
             light_wp = self.lights_waypoint_lookup[li]
             light_position = light.pose.pose.position
             distance = self.distance(light_position, current_position)
@@ -411,6 +396,7 @@ class TLDetector(object):
             return light_wp, state
         # This has been deliberatedly commented out as it is being reused.
         #self.waypoints = None
+
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
