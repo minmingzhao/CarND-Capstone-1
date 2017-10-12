@@ -349,7 +349,7 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        if self.enable_location_zoom or True:
+        if self.enable_location_zoom:
             # Two pairs of points that mark the top left and bottom right of
             # cropping region - 3D world/car coordinates in meters (not image).
             crop_width = 1.0
