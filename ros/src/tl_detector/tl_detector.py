@@ -18,7 +18,7 @@ STATE_COUNT_THRESHOLD = 3
 MAX_LIGHT_DISTANCE = 120.
 
 class TLDetector(object):
-    def __init__(self, enable_location_zoom=False):
+    def __init__(self, enable_location_zoom=False, enable_test_light_state=True):
         rospy.init_node('tl_detector')
 
         self.pose = None
@@ -26,9 +26,19 @@ class TLDetector(object):
         self.num_waypoints = 0
         self.camera_image = None
         self.lights = None
+        # Used in testing - latest lights information.
+        self.latest_lights = None
         # Enable zooming in on the traffic light location on the image. This
         # requires a calibrated camera with precise focal length etc.
         self.enable_location_zoom = enable_location_zoom
+
+        # Enable using the light state information from the /vehicle/traffic_lights
+        # topic.
+        #
+        # NOTES:
+        # 1. Set this to False to use the trained classifier.
+        # 2. Set this to True to use the reported traffic light state without the classifier.
+        self.enable_test_light_state = enable_test_light_state
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         self.base_waypoints_sub = rospy.Subscriber(
@@ -82,17 +92,23 @@ class TLDetector(object):
         
     def traffic_cb(self, msg):
         if len(msg.lights) > 0:
-            rospy.loginfo('msg.lights length {}'.format(len(msg.lights)))            
-            self.lights = msg.lights
-            # constant information that doens't change.
-            self.traffic_lights_sub.unregister()
-            self.init_lights_waypoint_lookup_if_ready()
+            self.latest_lights = msg.lights
+            if self.lights is None:
+                self.lights = msg.lights
+            if not self.initialized:
+                rospy.loginfo('msg.lights length {}'.format(len(msg.lights)))            
+                self.init_lights_waypoint_lookup_if_ready()
+            if not self.enable_test_light_state:
+                # constant information that doens't change.
+                self.traffic_lights_sub.unregister()
+            else:
+                if not self.initialized:
+                    rospy.loginfo('Using reported traffic light state for testing.')
 
     def init_lights_waypoint_lookup_if_ready(self):
         """Initialize for quick lights waypoint lookup.
         """
-        if self.lights_waypoint_lookup is None and self.waypoints is not None \
-           and self.lights is not None:
+        if self.waypoints is not None and self.lights is not None:
             rospy.loginfo('waypoints length {}'.format(self.num_waypoints))
             rospy.loginfo('lights length {}'.format(len(self.lights)))
             self.lights_waypoint_lookup = []
@@ -318,6 +334,32 @@ class TLDetector(object):
         """
         return self.lights_stopline_waypoint_lookup[light_idx]
     
+    def get_test_light_state(self, light):
+        """Gets the simulation reported traffic light state.
+
+        Args:
+            light (TrafficLight): light to classify
+
+        Returns:
+            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+
+        """
+        if self.latest_lights is None:
+            return TrafficLight.UNKNOWN
+
+        match = None
+        min_distance = 1e9
+        for l in self.latest_lights:
+            dist = self.distance(
+                light.pose.pose.position, l.pose.pose.position)
+            if dist < min_distance:
+                min_distance = dist
+                match = l
+        if min_distance < 1e-2:
+            return match.state
+        else:
+            return TrafficLight.UNKNOWN
+
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
@@ -328,7 +370,8 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
+        if not self.latest_lights:
+            
             self.prev_light_loc = None
             return False
 
@@ -391,9 +434,13 @@ class TLDetector(object):
         if light_idx is not None:
             light = self.lights[light_idx]
             light_wp = self.get_closest_stop_line_waypoint(light_idx)
-            state = self.get_light_state(light)
+            if self.enable_test_light_state:
+                state = self.get_test_light_state(light)
+            else:
+                state = self.get_light_state(light)
             #rospy.loginfo('light_wp {} state {}'.format(light_wp, state))
             return light_wp, state
+
         # This has been deliberatedly commented out as it is being reused.
         #self.waypoints = None
 
