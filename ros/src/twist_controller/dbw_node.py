@@ -59,6 +59,8 @@ class DBWNode(object):
         self.brake_deadband_perc = abs(brake_deadband / decel_limit)
         self.brake_deadband = brake_deadband
 
+        self.dbw_enabled = False
+
         # TODO: Create `TwistController` object
         self.controller = Controller({'wheel_base': wheel_base,
                                         'steer_ratio': steer_ratio,
@@ -70,6 +72,7 @@ class DBWNode(object):
 
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.target_speed = None
         self.target_angular_speed = None
@@ -89,7 +92,9 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
 
-            if self.target_speed is not None and self.target_angular_speed is not None and self.current_speed is not None:
+            ready = not (self.target_speed is None or self.target_angular_speed is None or self.current_speed is None)
+
+            if self.dbw_enabled and ready:
                 self.time_elapsed = rospy.get_time() - self.previous_time if self.previous_time else 0.0
                 self.previous_time = rospy.get_time()
                 throttle, brake, steering = self.controller.control(self.target_speed, self.target_angular_speed, self.current_speed, self.time_elapsed)
@@ -99,6 +104,9 @@ class DBWNode(object):
                     brake = self.brake_max_torque*brake
                 self.publish(throttle, brake, steering)
             rate.sleep()
+
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = msg.data
 
     def twist_cmd_cb(self, twist_cmd):
         self.target_speed = twist_cmd.twist.linear.x
@@ -130,4 +138,8 @@ class DBWNode(object):
 
 
 if __name__ == '__main__':
-    DBWNode()
+    try:
+        DBWNode()
+    except rospy.ROSInterruptException:
+        rospy.logerr('Could not start DBW node.')
+
