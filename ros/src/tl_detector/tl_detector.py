@@ -375,7 +375,7 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         if self.enable_location_zoom:
             # Two pairs of points that mark the top left and bottom right of
@@ -448,6 +448,6 @@ class TLDetector(object):
 
 if __name__ == '__main__':
     try:
-        TLDetector()
+        TLDetector(False, False)
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start traffic node.')
