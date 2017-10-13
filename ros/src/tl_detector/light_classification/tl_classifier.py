@@ -43,12 +43,4 @@ class TLClassifier(object):
 
         tl_state_id = np.argmax(predictions)
 
-        rospy.logwarn('Detect traffic light = %s', ['red', 'yellow', 'green', 'unknown'][tl_state_id])
-
-        self.img_count += 1
-
-        if self.img_count < 10:
-            scipy.misc.imsave('/home/dhlong/github/ros_img/ros_out/img'+ str(self.img_count) + '_state' + str(tl_state_id) + '.png', image)
-
-
         return TL_STATES[tl_state_id]
