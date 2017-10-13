@@ -53,6 +53,12 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        self.time_elapsed = 0.0
+        self.previous_time = rospy.get_time()
+        self.brake_max_torque = abs(decel_limit * vehicle_mass * wheel_radius)
+        self.brake_deadband_perc = abs(brake_deadband / decel_limit)
+        self.brake_deadband = brake_deadband
+
         # TODO: Create `TwistController` object
         self.controller = Controller({'wheel_base': wheel_base,
                                         'steer_ratio': steer_ratio,
@@ -72,7 +78,7 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(1) # 50Hz
+        rate = rospy.Rate(5) # ?Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -84,7 +90,13 @@ class DBWNode(object):
             # if <dbw is enabled>:
 
             if self.target_speed is not None and self.target_angular_speed is not None and self.current_speed is not None:
-                throttle, brake, steering = self.controller.control(self.target_speed, self.target_angular_speed, self.current_speed)
+                self.time_elapsed = rospy.get_time() - self.previous_time if self.previous_time else 0.0
+                self.previous_time = rospy.get_time()
+                throttle, brake, steering = self.controller.control(self.target_speed, self.target_angular_speed, self.current_speed, self.time_elapsed)
+                if throttle > 0.0 or (brake < self.brake_deadband_perc and self.current_speed > 0.5):
+                    brake = 0.0
+                else:
+                    brake = self.brake_max_torque*brake
                 self.publish(throttle, brake, steering)
             rate.sleep()
 
@@ -97,22 +109,24 @@ class DBWNode(object):
 
 
     def publish(self, throttle, brake, steer):
-        tcmd = ThrottleCmd()
-        tcmd.enable = True
-        tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
-        tcmd.pedal_cmd = throttle
-        self.throttle_pub.publish(tcmd)
 
         scmd = SteeringCmd()
         scmd.enable = True
         scmd.steering_wheel_angle_cmd = steer
         self.steer_pub.publish(scmd)
 
-        # bcmd = BrakeCmd()
-        # bcmd.enable = True
-        # bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
-        # bcmd.pedal_cmd = brake
-        # self.brake_pub.publish(bcmd)
+        if throttle > 0.0:
+            tcmd = ThrottleCmd()
+            tcmd.enable = True
+            tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
+            tcmd.pedal_cmd = throttle
+            self.throttle_pub.publish(tcmd)
+        else:
+            bcmd = BrakeCmd()
+            bcmd.enable = True
+            bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+            bcmd.pedal_cmd = brake
+            self.brake_pub.publish(bcmd)
 
 
 if __name__ == '__main__':
