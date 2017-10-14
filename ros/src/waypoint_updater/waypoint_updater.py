@@ -65,6 +65,8 @@ class WaypointUpdater(object):
                 wpstart_idx = self.closest_waypoint(self.current_pose.position)
                 # If this waypoint is behind the current pose then update to next waypoint
                 self.next_waypoint_index = self.ahead_waypoint(wpstart_idx)
+                self.max_speed = self.get_waypoint_velocity(self.base_waypoints[self.next_waypoint_index])
+                # rospy.logwarn("self.max_speed %s", self.max_speed)
                 # Set the waypoints' speeds and publish results
                 self.publish()
             rate.sleep()
@@ -154,9 +156,10 @@ class WaypointUpdater(object):
             self.wp_sub.unregister()
             self.wp_sub = None
             # self.max_speed = self.get_waypoint_velocity(self.base_waypoints[0])  # get velocity from waypoint loader
-            self.max_speed = 12  # get velocity from waypoint loader
+            # rospy.logwarn("self.max_speed %s", self.max_speed)
+            # self.max_speed = 12  # get velocity from waypoint loader
             # self.slow_dist = self.max_speed * 5
-            self.slow_dist = max(self.get_waypoint_velocity(self.base_waypoints[0]) * 5, self.max_speed * 3)
+            self.slow_dist = max(self.get_waypoint_velocity(self.base_waypoints[0]) * 5, 12 * 3)
 
     def current_velocity_cb(self, msg):
         self.current_velocity = msg.twist.linear.x
