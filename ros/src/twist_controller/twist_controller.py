@@ -17,6 +17,7 @@ class Controller(object):
                                             max_steer_angle=params['max_steer_angle'])
         self.set_controllers()
 
+
     def control(self, target_speed, target_angular_speed, current_speed, time_elapsed):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
@@ -29,6 +30,7 @@ class Controller(object):
 
         # return 0.3, 0., steer
         return throttle, brake, steer
+
 
     def set_controllers(self):
         #Rough estimate for PID controller

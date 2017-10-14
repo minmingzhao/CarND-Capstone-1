@@ -18,6 +18,7 @@ STATE_COUNT_THRESHOLD = 3
 MAX_LIGHT_DISTANCE = 120.
 
 class TLDetector(object):
+
     def __init__(self, enable_location_zoom=False, enable_test_light_state=True):
         rospy.init_node('tl_detector')
 
@@ -82,8 +83,10 @@ class TLDetector(object):
 
         rospy.spin()
 
+
     def pose_cb(self, msg):
         self.pose = msg
+
 
     def waypoints_cb(self, waypoints):
         if waypoints is not None:
@@ -93,6 +96,7 @@ class TLDetector(object):
             self.base_waypoints_sub.unregister()
             self.init_lights_waypoint_lookup_if_ready()
         
+
     def traffic_cb(self, msg):
         if len(msg.lights) > 0:
             self.latest_lights = msg.lights
@@ -107,6 +111,7 @@ class TLDetector(object):
             else:
                 if not self.initialized:
                     rospy.loginfo('Using reported traffic light state for testing.')
+
 
     def init_lights_waypoint_lookup_if_ready(self):
         """Initialize for quick lights waypoint lookup.
@@ -158,7 +163,8 @@ class TLDetector(object):
             rospy.loginfo('lights_stopline_waypoint_lookup length {}: {}'.format(
                 len(self.lights_stopline_waypoint_lookup),
                 self.lights_stopline_waypoint_lookup))
-                          
+ 
+
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
@@ -200,6 +206,7 @@ class TLDetector(object):
         # roll pitch yaw
         return euler[2]
 
+
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -234,6 +241,7 @@ class TLDetector(object):
             if closest >= len(self.waypoints.waypoints):
                 closest = 0
         return closest
+
 
     def project_to_image_plane(self, point_in_world, offset_y=0, offset_z=0, debug=False):
         """Project point from 3D world coordinates to 2D camera image location
@@ -325,6 +333,7 @@ class TLDetector(object):
                 min_distance = closest
         return closest
 
+
     def get_closest_stop_line_waypoint(self, light_idx):
         """Gets the waypoint index for the stopline that's cloest to the light.
         
@@ -336,6 +345,7 @@ class TLDetector(object):
               traffic light.
         """
         return self.lights_stopline_waypoint_lookup[light_idx]
+
     
     def get_test_light_state(self, light):
         """Gets the simulation reported traffic light state.
@@ -362,6 +372,7 @@ class TLDetector(object):
             return match.state
         else:
             return TrafficLight.UNKNOWN
+
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -415,6 +426,7 @@ class TLDetector(object):
         #Get classification
         return self.light_classifier.get_classification(cv_image)
 
+
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -448,6 +460,7 @@ class TLDetector(object):
         #self.waypoints = None
 
         return -1, TrafficLight.UNKNOWN
+
 
 if __name__ == '__main__':
     try:
