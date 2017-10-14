@@ -3,18 +3,18 @@ import scipy.misc
 import tensorflow as tf
 import numpy as np
 
-TLC_GRAPH_PATH = 'optimized_graph.pb'
+# TLC_GRAPH_PATH = 'optimized_graph.pb'
 TLC_INPUT_SHAPE = (300, 400)
 TL_STATES = [TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.GREEN, TrafficLight.UNKNOWN]
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, path):
         #TODO load classifier
         self.tlc_graph = tf.Graph()
 
         with self.tlc_graph.as_default():
             gd = tf.GraphDef()
-            with tf.gfile.GFile(TLC_GRAPH_PATH, 'rb') as f:
+            with tf.gfile.GFile(path, 'rb') as f:
                 serialized_graph = f.read()
                 gd.ParseFromString(serialized_graph)
                 tf.import_graph_def(gd, name='')
