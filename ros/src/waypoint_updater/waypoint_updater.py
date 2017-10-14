@@ -112,7 +112,7 @@ class WaypointUpdater(object):
                 #     speed = min(target_speed, speed + ACCEL)
                 # else:
                 #     speed = max(target_speed, speed - ACCEL)
-                speed = min(target_speed, self.get_waypoint_velocity(wp))
+                speed = target_speed
                 self.set_waypoint_velocity(wp, speed)
             return
         # Report message of upcoming traffic light.
@@ -128,7 +128,7 @@ class WaypointUpdater(object):
                 decel = 0
                 rospy.logwarn("!!! You are into intersection while RED light on! Vehicle Stopped")
             for wp in self.final_waypoints:
-                speed = min(max(0, speed - decel), self.get_waypoint_velocity(wp))
+                speed = max(0, speed - decel)
                 self.set_waypoint_velocity(wp, speed)
         else:
             speed = self.current_velocity
@@ -139,7 +139,7 @@ class WaypointUpdater(object):
                     #     speed = min(self.max_speed, speed + ACCEL)
                     # else:
                     #     speed = max(self.max_speed, speed - ACCEL)
-                    speed = min(self.max_speed, self.get_waypoint_velocity(wp))
+                    speed = self.max_speed
                     self.set_waypoint_velocity(wp, speed)
 
     def pose_cb(self, msg):
