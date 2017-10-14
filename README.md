@@ -5,10 +5,10 @@
 | Name           | Udacity account     |
 |:---------------|:--------------------|
 | Duong Hai Long | dhlong.hp@gmail.com |
-| Lee Wonjun     |                     |
-| Kim HyunKoo    |                     |
-| Xing Jin       |                     |
-| Zhao Minming   |                     |
+| Lee Wonjun     | mymamyma@gmail.com  |
+| Kim HyunKoo    | studian@gmail.com   |
+| Xing Jin       |xingjin2017@gmail.com|
+| Zhao Minming   |minmingzhao@gmail.com|
 
 
 ### Introduction
