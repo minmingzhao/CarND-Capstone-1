@@ -31,6 +31,7 @@ class TLDetector(object):
         # Enable zooming in on the traffic light location on the image. This
         # requires a calibrated camera with precise focal length etc.
         self.enable_location_zoom = enable_location_zoom
+        self.initialized = False
 
         # Enable using the light state information from the /vehicle/traffic_lights
         # topic.
@@ -39,6 +40,28 @@ class TLDetector(object):
         # 1. Set this to False to use the trained classifier.
         # 2. Set this to True to use the reported traffic light state without the classifier.
         self.enable_test_light_state = enable_test_light_state
+
+
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
+
+        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+
+        self.bridge = CvBridge()
+        self.light_classifier = None if enable_test_light_state else TLClassifier()
+        self.listener = tf.TransformListener()
+
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+
+        self.lights_waypoint_lookup = None
+        self.lights_stopline_waypoint_lookup = None
+
+        self.distance = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+        self.direction = lambda a, b: math.atan2(a.y-b.y, a.x-b.x)
+        self.uid = 0
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         self.base_waypoints_sub = rospy.Subscriber(
@@ -54,28 +77,6 @@ class TLDetector(object):
         self.traffic_lights_sub = rospy.Subscriber('/vehicle/traffic_lights',
                                                    TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
-
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
-
-        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
-
-        self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
-
-        self.lights_waypoint_lookup = None
-        self.lights_stopline_waypoint_lookup = None
-        self.initialized = False
-
-        self.distance = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
-        self.direction = lambda a, b: math.atan2(a.y-b.y, a.x-b.x)
-        self.uid = 0
 
         rospy.spin()
 

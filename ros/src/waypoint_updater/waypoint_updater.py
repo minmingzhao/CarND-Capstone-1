@@ -40,6 +40,7 @@ class WaypointUpdater(object):
         self.light_wp = None
         self.max_speed = None
         self.slow_dist = None
+        self.current_velocity = 0 # or None ??
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         self.wp_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
