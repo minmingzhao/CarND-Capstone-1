@@ -243,7 +243,7 @@ class TLDetector(object):
         return closest
 
 
-    def project_to_image_plane(self, point_in_world, offset_y=0, offset_z=0, debug=False):
+    def project_to_image_plane(self, point_in_world, offset_y=0, offset_z=0):
         """Project point from 3D world coordinates to 2D camera image location
 
         Args:
@@ -410,7 +410,9 @@ class TLDetector(object):
             if x2 - x1 < 20 or y2 - y1 < 20:
                 return TrafficLight.UNKNOWN
 
-            if debug:
+            # Flag for viewing image projection.
+            local_debug = False
+            if local_debug:
                 marked_img = cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 oname = '/home/xjin/tmp/lights/lights_{:05d}.png'.format(self.uid)
                 w = abs(x1 - x2)
