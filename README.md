@@ -130,7 +130,7 @@ a projected trajectory for the car.
     * `twist_controller/dbw_node.py`
 
 ### Project Simulation Result
-[![Results](https://img.youtube.com/vi/ISefPlTw8qA/0.jpg)](https://www.youtube.com/watch?v=https://youtu.be/ISefPlTw8qA)
+[![Results](https://img.youtube.com/vi/ISefPlTw8qA/0.jpg)](https://www.youtube.com/watch?v=ISefPlTw8qA)
 (click on the image to open the video)
 
 
