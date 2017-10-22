@@ -194,6 +194,10 @@ unzip traffic_light_bag_files.zip
 ```
 3. Play the bag file
 ```bash
+roscore
+```
+Then open another tab in VM or native Ubuntu if you use native installation. Could not run in dock for rosbag as it requires multiple tabs. 
+```bash
 rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
 ```
 4. Launch your project in site mode
